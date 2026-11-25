@@ -10,7 +10,7 @@ AVING이 보도한 **KES(Korea Electronics Show, 한국전자전 · 서울 COEX)
 aving-kes/
 ├─ index.html              # 페이지 뼈대 (헤더/검색/플레이어/푸터)
 ├─ assets/
-│  ├─ style.css            # AVING FIX 디자인 기반, KES용 블루 강조색
+│  ├─ style.css            # Dibo aving@KES 기준의 다크 아카이브, 블루 강조색
 │  ├─ app.js               # 렌더링 + 해시 라우팅 + 검색 + 영상 플레이어
 │  ├─ favicon.svg
 │  └─ og.png               # SNS 공유 이미지 (1200x630)
@@ -27,7 +27,7 @@ aving-kes/
 
 | 주소 | 내용 |
 |---|---|
-| `/#/` | 홈: KES 타이포 히어로 → 최신 기사 → Innovation Awards → 대표 영상 → 연도별 에디션 → 추가 기사 |
+| `/#/` | 홈: KES·연도 타이포그래피 + 전시 소개 → 동일 크기 기사 카드 → Innovation Awards → 대표 영상 → 연도별 에디션 → 추가 기사 |
 | `/#/edition/2026` | 연도별 에디션 (섹션 필터) |
 | `/#/awards` | KES Innovation Awards 수상 기사 |
 | `/#/videos` | 영상이 있는 기사 |
