@@ -162,9 +162,10 @@ export function build(raw) {
       const tags = [];
       if (/innovation awards?/i.test(text) && !/CES/.test(text)) tags.push('awards');
       if (/interview/i.test(r.t)) tags.push('interview');
+      // 옛 기사 제목에는 &amp; 처럼 두 번 인코딩된 문자가 남아 있어 한 번 더 풀어 줌
       return {
-        id: r.id, t: r.t, d: r.d.replace(/\./g, '-'), by: r.by, img: r.img,
-        lead: (r.lead || r.det.desc || '').slice(0, 240),
+        id: r.id, t: decode(r.t), d: r.d.replace(/\./g, '-'), by: r.by, img: r.img,
+        lead: decode(r.lead || r.det.desc || '').slice(0, 240),
         sec: r.det.sec, y, tags, yt: r.det.yt?.[0] || '',
       };
     })

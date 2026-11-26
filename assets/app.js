@@ -395,7 +395,9 @@
     const el = $("#artBody");
     const credit = `<p class="art__credit">This story was first published by <a href="${ORIGINAL(s.id)}" target="_blank" rel="noopener">AVING USA</a>. © AVING NEWS.</p>`;
     if (body?.body?.length) {
-      el.innerHTML = body.body.map(block).join("") + credit;
+      // 본문에 사진이 없는 옛 기사는 대표 이미지를 맨 위에 보여 줌
+      const lead = s.img && !body.body.some((b) => b.t === "img") ? `<figure><img src="${esc(s.img)}" alt=""></figure>` : "";
+      el.innerHTML = lead + body.body.map(block).join("") + credit;
     } else {
       el.innerHTML = `${s.img ? `<figure><img src="${esc(s.img)}" alt=""></figure>` : ""}<p>${esc(s.lead)}</p>
         <p><a class="btn btn--primary" href="${ORIGINAL(s.id)}" target="_blank" rel="noopener">Read the full story on AVING USA ↗</a></p>`;
