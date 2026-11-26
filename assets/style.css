@@ -1468,3 +1468,143 @@ dialog::backdrop {
   .edition-nav::-webkit-scrollbar{display:none}
   .edition-nav .pill{flex:0 0 auto;white-space:nowrap}
 }
+
+/* KES 2027 plan: two venues, shown in the hero below the archive index. */
+.next-show {
+  margin: 40px 0 0;
+  text-align: left;
+}
+.next-show__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px 32px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.next-show__head h2 {
+  margin: 0;
+  font-size: clamp(22px, 2.3vw, 30px);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.next-show__status {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--kes-gradient);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.next-show__head p {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--muted);
+  font-size: 14px;
+}
+.next-show__venues {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.next-show__venue {
+  position: relative;
+  padding: 28px 32px 32px;
+  --venue-accent: #29b6e8;
+}
+.next-show__venue--kintex {
+  --venue-accent: #ff4169;
+  border-left: 1px solid var(--line);
+}
+.next-show__venue:before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 32px;
+  width: 48px;
+  height: 2px;
+  background: var(--venue-accent);
+}
+.next-show__theme {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--venue-accent);
+}
+.next-show__venue h3 {
+  margin: 0;
+  font-size: clamp(26px, 2.8vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.next-show__venue h3 span {
+  font-size: 0.55em;
+  font-weight: 500;
+  color: var(--muted);
+  margin-left: 6px;
+}
+.next-show__dates {
+  margin: 10px 0 20px;
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.next-show__dates span {
+  color: var(--muted);
+  font-weight: 500;
+}
+.next-show dl {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.next-show dl div {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.next-show dt {
+  color: var(--dim);
+}
+.next-show dd {
+  margin: 0;
+  color: var(--text);
+}
+.next-show__foot {
+  margin: 14px 0 0;
+  color: var(--dim);
+  font-size: 13px;
+}
+.next-show__foot a {
+  color: var(--accent);
+}
+@media (max-width: 760px) {
+  .next-show__venues {
+    grid-template-columns: 1fr;
+  }
+  .next-show__venue {
+    padding: 24px 16px 28px;
+  }
+  .next-show__venue:before {
+    left: 16px;
+    width: 32px;
+  }
+  .next-show__venue--kintex {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .next-show dl div {
+    grid-template-columns: 72px 1fr;
+  }
+}

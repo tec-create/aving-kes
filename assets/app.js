@@ -101,6 +101,64 @@
     { id: "show", label: "Show floor", ids: [54809, 54816] },
   ];
 
+  // KES 2027 추진계획(안) — KEA 발표 자료 기준. 일정·전시장이 바뀌면 여기만 고치면 됩니다.
+  const NEXT_SHOW = {
+    year: 2027,
+    status: "Planned",
+    note: "Two venues, two roles: KES 2027 is planned across COEX and KINTEX, each with its own focus.",
+    venues: [
+      {
+        id: "coex",
+        venue: "COEX",
+        city: "Seoul",
+        dates: "Oct 12 – 15, 2027",
+        days: "4 days",
+        halls: "Hall B · Grand Ballroom · Lobby",
+        theme: "Life Tech",
+        focus: "AI home appliances, smart home, beauty and digital health",
+        programs: "Media Day · Opening Keynote · CES Asia Unveiled Seoul",
+      },
+      {
+        id: "kintex",
+        venue: "KINTEX",
+        city: "Goyang",
+        dates: "Oct 20 – 22, 2027",
+        days: "3 days",
+        halls: "Hall 4 (to be confirmed)",
+        theme: "Industry Tech",
+        focus: "Advanced electronic components, materials, manufacturing AX and physical AI",
+        programs: "KES Match · Biz Connect · K STAGE · K Connect AI",
+      },
+    ],
+    scale: "250 exhibitors · 600 booths per venue",
+  };
+
+  const nextShow = () => `
+          <section class="next-show" aria-labelledby="next-show-title">
+            <div class="next-show__head">
+              <h2 id="next-show-title"><span class="next-show__status">${NEXT_SHOW.status}</span> KES ${NEXT_SHOW.year}</h2>
+              <p>${NEXT_SHOW.note}</p>
+            </div>
+            <div class="next-show__venues">
+              ${NEXT_SHOW.venues
+                .map(
+                  (v) => `
+              <article class="next-show__venue next-show__venue--${v.id}">
+                <p class="next-show__theme">${esc(v.theme)}</p>
+                <h3>${esc(v.venue)} <span>${esc(v.city)}</span></h3>
+                <p class="next-show__dates">${esc(v.dates)} <span>· ${esc(v.days)}</span></p>
+                <dl>
+                  <div><dt>Halls</dt><dd>${esc(v.halls)}</dd></div>
+                  <div><dt>Focus</dt><dd>${esc(v.focus)}</dd></div>
+                  <div><dt>Programs</dt><dd>${esc(v.programs)}</dd></div>
+                </dl>
+              </article>`,
+                )
+                .join("")}
+            </div>
+            <p class="next-show__foot">${esc(NEXT_SHOW.scale)} · Dates and halls may change. Official details: <a href="https://www.kes.org/eng/" target="_blank" rel="noopener">kes.org ↗</a></p>
+          </section>`;
+
   /* ---------- home ---------- */
   function renderHome() {
     view.onclick = null;
@@ -145,6 +203,7 @@
               <span class="archive-index__detail">Explore video stories <span aria-hidden="true">↗</span></span>
             </a>
           </nav>
+          ${nextShow()}
           <p class="archive-credit"><span>Reporting by <strong>AVING NEWS</strong></span><span>COEX, Seoul · Korea</span></p>
         </div>
       </section>
