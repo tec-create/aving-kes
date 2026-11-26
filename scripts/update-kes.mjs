@@ -25,6 +25,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RAW = path.join(ROOT, 'scripts', 'raw-kes.json');
 // 이미 확인했지만 KES 기사가 아니었던 기사 ID (다시 요청하지 않음)
 const CHECKED = path.join(ROOT, 'scripts', 'checked-kes.json');
+// us.aving.net 검색은 2024-11-26 이후 기사만 찾아 줍니다. 그 이전 KES 기사(2005~2022)는
+// 전체 기사 목록을 훑어 찾은 기사번호와 에디션 연도를 이 파일에 보관하고, 번호로 직접 받아 옵니다.
+const ARCHIVE = path.join(ROOT, 'scripts', 'archive-kes.json');
 const OUT = path.join(ROOT, 'data', 'stories.json');
 const BODY_DIR = path.join(ROOT, 'data', 'body');
 const exists = f => access(f).then(() => true, () => false);
@@ -73,11 +76,11 @@ function totalPages(html) {
 
 /* ---------- article page ---------- */
 // KES 는 대문자만 (makes, likes 등 제외), 정식 명칭은 대소문자 무시
-const KES_RE = /\bKES(?:\s?(20\d\d))?\b|[Kk]orea [Ee]lectronics [Ss]how(?:\s?(20\d\d))?/g;
+const KES_RE = /(?<![A-Za-z])KES(?![A-Za-z])(?:\s?(20\d\d))?|[Kk]orea [Ee]lectronics? [Ss]hows?(?:\s?(20\d\d))?/g;
 // CES 기사 판별: 제목에 CES 가 있으면 CES 기사로 봄 (CES Asia Unveiled Seoul 포함)
 export const isCesTitle = t => /\bCES\b/.test(t || '');
 
-function parseArticle(html) {
+export function parseArticle(html) {
   const meta = name => (html.match(new RegExp(`<meta[^>]+(?:property|name)="${name}"[^>]+content="([^"]*)"`)) || [])[1] || '';
   const bodyHtml = (html.match(/id="article-view-content-div"[^>]*>([\s\S]*?)<\/article>/) || [])[1] || '';
   const txt = decode(bodyHtml);
@@ -92,6 +95,17 @@ function parseArticle(html) {
     ctx: m[0] ? txt.slice(Math.max(0, m[0].index - 80), m[0].index + 80) : '',
     desc: decode(meta('description')).slice(0, 240),
   };
+}
+
+// 기사번호로 직접 받은 기사(아카이브)의 목록 정보: 제목·날짜·기자·대표이미지·요약
+export function parsePageInfo(html) {
+  const meta = name => (html.match(new RegExp(`<meta[^>]+(?:property|name)="${name}"[^>]+content="([^"]*)"`)) || [])[1] || '';
+  const title = decode(meta('og:title') || (html.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '').replace(/\s*[-<|]\s*AVING.*$/i, '');
+  const pub = meta('article:published_time') || meta('og:regDate') || '';
+  const d = pub ? pub.slice(0, 16).replace('T', ' ').replace(/-/g, '.') : '';
+  const by = decode(meta('dable:author') || meta('author') || '');
+  const img = meta('og:image');
+  return { t: title, d, by, img: img && !/logo|og_image|noimage/i.test(img) ? new URL(img, BASE).href : '', lead: decode(meta('description')).slice(0, 300) };
 }
 
 /* ---------- article body → blocks (data/body/<id>.json) ---------- */
@@ -133,7 +147,7 @@ export function build(raw) {
   //  - 제목/리드에 KES 또는 Korea Electronics Show 가 있거나
   //  - 본문에 KES 언급이 3회 이상이고 CES 언급보다 많으면 사용
   //    (주간 전시회 소개 기사처럼 KES 를 한두 번 스치는 기사는 제외)
-  const isKes = r => r.det && !isCesTitle(r.t) && (
+  const isKes = r => r.det && !isCesTitle(r.t) && (r.archive ||
     /\bKES\b|Korea Electronics Show/i.test(`${r.t} ${r.lead}`) ||
     (r.det.hits >= 3 && r.det.hits > (r.det.ces || 0))
   );
@@ -144,9 +158,9 @@ export function build(raw) {
       const tYear = (r.t.match(/KES\s?(20\d\d)/) || [])[1];
       const dYear = +r.d.slice(0, 4);
       const yrs = (r.det.yrs || []).map(Number);
-      const y = +(tYear || (yrs.includes(dYear) ? dYear : yrs.sort((a, b) => Math.abs(a - dYear) - Math.abs(b - dYear))[0]) || dYear);
+      const y = +(r.y || tYear || (yrs.includes(dYear) ? dYear : yrs.sort((a, b) => Math.abs(a - dYear) - Math.abs(b - dYear))[0]) || dYear);
       const tags = [];
-      if (/innovation awards?/i.test(text)) tags.push('awards');
+      if (/innovation awards?/i.test(text) && !/CES/.test(text)) tags.push('awards');
       if (/interview/i.test(r.t)) tags.push('interview');
       return {
         id: r.id, t: r.t, d: r.d.replace(/\./g, '-'), by: r.by, img: r.img,
@@ -214,10 +228,34 @@ async function main() {
     }
     for (const x of list) if (known.has(x.id)) Object.assign(known.get(x.id), { t: x.t, lead: x.lead, img: x.img });
     // KES 언급이 없는 기사는 ID 만 checked-kes.json 에 남기고, raw 에는 KES 언급 기사만 보관
-    for (const r of known.values()) if (r.det && !r.det.hits) { checked.add(r.id); known.delete(r.id); }
+    for (const r of known.values()) if (r.det && !r.det.hits && !r.archive) { checked.add(r.id); known.delete(r.id); }
     raw = [...known.values()].filter(r => !isCesTitle(r.t)).sort((a, b) => b.id - a.id);
     await writeFile(RAW, JSON.stringify(raw, null, 1));
     await writeFile(CHECKED, JSON.stringify([...checked]));
+
+    // 아카이브(2005~2022) KES 기사: 기사번호로 직접 받아 옴 (처음 한 번만, 이후엔 raw-kes.json 에 보관)
+    let archive = [];
+    try { archive = JSON.parse(await readFile(ARCHIVE, 'utf8')).items || []; } catch { /* none */ }
+    const todoArc = archive.filter(a => !known.get(a.id)?.det);
+    if (todoArc.length) console.log(`\n아카이브 KES 기사 ${todoArc.length}건 요청 (1.5초 간격, 약 ${Math.ceil(todoArc.length * DELAY / 60000)}분)`);
+    let k = 0;
+    for (const a of todoArc) {
+      try {
+        const html = await get(`${BASE}/news/articleView.html?idxno=${a.id}`);
+        const info = parsePageInfo(html);
+        const body = parseBody(html);
+        // 옛 기사는 요약(description)이 짧게 잘려 있어 본문 첫 문단으로 보충
+        const first = (body.find(x => x.t === 'p') || {}).x || '';
+        if (first.length > info.lead.length) info.lead = first.slice(0, 300);
+        known.set(a.id, { id: a.id, ...info, y: a.y, archive: true, det: parseArticle(html) });
+        await writeFile(path.join(BODY_DIR, `${a.id}.json`), JSON.stringify({ body }));
+      } catch (e) { console.warn(`\n실패 ${a.id}: ${e.message}`); }
+      process.stdout.write(`\r아카이브 ${++k}/${todoArc.length}`);
+    }
+    if (todoArc.length) {
+      raw = [...known.values()].filter(r => !isCesTitle(r.t)).sort((a, b) => b.id - a.id);
+      await writeFile(RAW, JSON.stringify(raw, null, 1));
+    }
 
     // 이전에 받았지만 본문 파일이 없는 KES 기사 → 본문만 추가 요청
     const missing = [];

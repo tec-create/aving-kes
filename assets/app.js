@@ -248,7 +248,7 @@
   }
 
   /* ---------- list pages ---------- */
-  function renderList({ title, desc, items }) {
+  function renderList({ title, desc, items, edition }) {
     const secs = [...new Set(items.map((s) => s.sec).filter(Boolean))];
     let sec = "",
       shown = PAGE;
@@ -259,6 +259,14 @@
         <p>${desc}</p>
       </div></section>
       <div class="wrap">
+        ${
+          edition !== undefined && DB.meta.editions.length > 1
+            ? `<nav class="edition-nav" aria-label="KES editions by year">
+          <a class="pill${edition === 0 ? " is-on" : ""}" href="#/all"${edition === 0 ? ' aria-current="page"' : ""}>All years · ${DB.items.length}</a>
+          ${DB.meta.editions.map((e) => `<a class="pill${e.y === edition ? " is-on" : ""}" href="#/edition/${e.y}"${e.y === edition ? ' aria-current="page"' : ""}>KES ${e.y} · ${e.n}</a>`).join("")}
+        </nav>`
+            : ""
+        }
         ${
           secs.length > 1
             ? `<div class="filters" role="toolbar" aria-label="Filter by section">
@@ -420,9 +428,10 @@
         desc: topic
           ? `${editionItems.length} stories from the Korea Electronics Show ${y}, selected by topic.`
           : e
-            ? `${e.n} stories${e.v ? ` and ${e.v} videos` : ""} from the Korea Electronics Show ${y} at COEX, Seoul.`
+            ? `${e.n} stories${e.v ? ` and ${e.v} videos` : ""} from the Korea Electronics Show ${y}.`
             : "No stories for this edition yet.",
         items: editionItems,
+        edition: y,
       });
     } else if (a === "awards") {
       renderList({
@@ -441,6 +450,7 @@
         title: "All KES stories",
         desc: `${items.length} stories across ${meta.editions.length} editions, newest first.`,
         items,
+        edition: 0,
       });
     } else {
       renderHome();

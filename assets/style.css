@@ -1459,3 +1459,12 @@ dialog::backdrop {
     scroll-behavior: auto !important;
   }
 }
+
+/* Edition switcher on list pages (KES by year) */
+.edition-nav{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 8px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.edition-nav .pill{text-decoration:none}
+@media (max-width: 700px) {
+  .edition-nav{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-right:-20px;padding-right:20px}
+  .edition-nav::-webkit-scrollbar{display:none}
+  .edition-nav .pill{flex:0 0 auto;white-space:nowrap}
+}
