@@ -294,20 +294,6 @@
               </div>
             </div>
           </div>
-          <nav class="archive-index" aria-label="Explore the KES archive">
-            <a class="archive-index__entry archive-index__entry--edition" href="#/edition/${latestEd.y}">
-              <span class="archive-index__title">Inside KES ${latestEd.y}</span>
-              <span class="archive-index__detail">Explore this edition <span aria-hidden="true">↗</span></span>
-            </a>
-            <a class="archive-index__entry" href="#/all">
-              <span class="archive-index__title">Stories <span class="archive-index__count">${latestEd.n.toLocaleString("en-US")}</span></span>
-              <span class="archive-index__detail">Read the coverage <span aria-hidden="true">↗</span></span>
-            </a>
-            <a class="archive-index__entry archive-index__entry--video" href="#/videos">
-              <span class="archive-index__title">With video <span class="archive-index__count">${latestEd.v}</span></span>
-              <span class="archive-index__detail">Explore video stories <span aria-hidden="true">↗</span></span>
-            </a>
-          </nav>
           ${nextShow()}
           <p class="archive-credit"><span>Reporting by <strong>AVING NEWS</strong></span><span>COEX, Seoul · Korea</span></p>
         </div>
