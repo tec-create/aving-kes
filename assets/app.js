@@ -46,6 +46,104 @@
   });
   document.addEventListener("visibilitychange", syncHeroMotion);
 
+  let destroyHeroCells = () => {};
+  function mountHeroCells(hero) {
+    const canvas = hero.querySelector(".hero__cells");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return () => {};
+    const motion = matchMedia("(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine)");
+    let cells = [], width = 0, height = 0, step = 26;
+    let frame = 0, visible = false, lastPaint = 0;
+    const colors = [[41, 182, 232], [137, 105, 239], [255, 65, 105]];
+
+    function paint(now) {
+      ctx.clearRect(0, 0, width, height);
+      let active = false;
+      for (const cell of cells) {
+        const life = Math.max(0, 1 - (now - cell.hit) / 1200);
+        const glow = cell.energy * life * life;
+        if (glow > 0.002) active = true;
+        ctx.fillStyle = `rgba(${cell.color},${cell.base + glow * cell.shade})`;
+        ctx.fillRect(cell.x, cell.y, step - 5, step - 5);
+      }
+      return active;
+    }
+    function tick(now) {
+      frame = 0;
+      if (!visible || document.hidden || !motion.matches) return;
+      // A bounded 30fps trail; no animation loop remains once the cells settle.
+      if (now - lastPaint < 32) {
+        frame = requestAnimationFrame(tick);
+        return;
+      }
+      lastPaint = now;
+      if (paint(now)) frame = requestAnimationFrame(tick);
+    }
+    function reset() {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      for (const cell of cells) cell.energy = 0;
+      paint(performance.now());
+    }
+    function resize() {
+      const rect = hero.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      step = width < 600 ? 24 : 28;
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cells = [];
+      for (let y = 0, row = 0; y < height; y += step, row++) {
+        for (let x = 0, col = 0; x < width; x += step, col++) {
+          const noise = ((col * 17 + row * 31 + col * row * 7) % 101) / 100;
+          const band = (Math.sin(col * .17 + row * .32) + 1) / 2;
+          const blend = Math.min(1.999, x / Math.max(width, 1) * 2);
+          const index = Math.floor(blend), mix = blend - index;
+          const color = colors[index].map((v, i) => Math.round(v + (colors[index + 1][i] - v) * mix)).join(",");
+          // Keep the central reading area quieter than the outer cell field.
+          const edge = Math.min(1, Math.abs(x / Math.max(width, 1) - .5) * 3);
+          cells.push({ x, y, color, base: (.025 + noise * .04 + band * .055) * (.4 + edge * .6), shade: .22 + edge * .35, hit: -Infinity, energy: 0 });
+        }
+      }
+      reset();
+    }
+    function move(event) {
+      if (!motion.matches || !visible || document.hidden || event.pointerType === "touch") return;
+      const rect = hero.getBoundingClientRect();
+      const x = event.clientX - rect.left, y = event.clientY - rect.top;
+      const now = performance.now(), radius = step * 4;
+      for (const cell of cells) {
+        const distance = Math.hypot(cell.x + (step - 5) / 2 - x, cell.y + (step - 5) / 2 - y);
+        if (distance >= radius) continue;
+        const remaining = cell.energy * Math.max(0, 1 - (now - cell.hit) / 1200) ** 2;
+        cell.energy = Math.max(remaining, (1 - distance / radius) ** 1.3);
+        cell.hit = now;
+      }
+      if (!frame) frame = requestAnimationFrame(tick);
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (!visible) reset();
+    });
+    const sizing = new ResizeObserver(resize);
+    observer.observe(hero);
+    sizing.observe(hero);
+    hero.addEventListener("pointermove", move, { passive: true });
+    document.addEventListener("visibilitychange", reset);
+    motion.addEventListener("change", reset);
+    resize();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      sizing.disconnect();
+      hero.removeEventListener("pointermove", move);
+      document.removeEventListener("visibilitychange", reset);
+      motion.removeEventListener("change", reset);
+    };
+  }
+
   /* ---------- helpers ---------- */
   const storyLabels = (s) =>
     [
@@ -172,6 +270,7 @@
 
     view.innerHTML = `
       <section class="hero" aria-labelledby="archive-title">
+        <canvas class="hero__cells" aria-hidden="true"></canvas>
         <div class="wrap hero__in">
           <h1 class="hero__masthead" id="archive-title"><span>KES</span> <span class="hero__year">${latestEd.y}</span></h1>
           <div class="hero__intro">
@@ -304,6 +403,7 @@
     };
     drawTopic();
     heroMotionObserver.observe($(".hero__masthead"));
+    destroyHeroCells = mountHeroCells($(".hero"));
   }
 
   /* ---------- list pages ---------- */
@@ -466,6 +566,7 @@
   /* ---------- router ---------- */
   function route() {
     if (!DB) return;
+    destroyHeroCells();
     heroMotionObserver.disconnect();
     const h = location.hash || "#/";
     const [, a, b, topicId] = h.split("/");
