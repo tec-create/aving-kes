@@ -49,6 +49,7 @@
   let destroyHeroCells = () => {};
   function mountHeroCells(hero) {
     const canvas = hero.querySelector(".hero__cells");
+    const intro = hero.querySelector(".hero__intro");
     const ctx = canvas.getContext("2d");
     if (!ctx) return () => {};
     const motion = matchMedia("(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine)");
@@ -64,7 +65,9 @@
         const glow = cell.energy * life * life;
         if (glow > 0.002) active = true;
         ctx.fillStyle = `rgba(${cell.color},${cell.base + glow * cell.shade})`;
-        ctx.fillRect(cell.x, cell.y, step - 5, step - 5);
+        ctx.beginPath();
+        ctx.roundRect(cell.x, cell.y, step - 5, step - 5, 4);
+        ctx.fill();
       }
       return active;
     }
@@ -88,7 +91,8 @@
     function resize() {
       const rect = hero.getBoundingClientRect();
       width = rect.width;
-      height = rect.height;
+      height = Math.max(0, intro.getBoundingClientRect().bottom - rect.top);
+      canvas.style.height = `${height}px`;
       step = width < 600 ? 24 : 28;
       const dpr = Math.min(devicePixelRatio || 1, 2);
       canvas.width = Math.round(width * dpr);
@@ -113,6 +117,7 @@
       if (!motion.matches || !visible || document.hidden || event.pointerType === "touch") return;
       const rect = hero.getBoundingClientRect();
       const x = event.clientX - rect.left, y = event.clientY - rect.top;
+      if (x < 0 || x >= width || y < 0 || y >= height) return;
       const now = performance.now(), radius = step * 4;
       for (const cell of cells) {
         const distance = Math.hypot(cell.x + (step - 5) / 2 - x, cell.y + (step - 5) / 2 - y);
@@ -128,8 +133,9 @@
       if (!visible) reset();
     });
     const sizing = new ResizeObserver(resize);
-    observer.observe(hero);
+    observer.observe(canvas);
     sizing.observe(hero);
+    sizing.observe(intro);
     hero.addEventListener("pointermove", move, { passive: true });
     document.addEventListener("visibilitychange", reset);
     motion.addEventListener("change", reset);

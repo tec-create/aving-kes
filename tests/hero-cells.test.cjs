@@ -10,9 +10,10 @@ const hero = target(), document = target(), motion = target();
 motion.matches = true;
 let now = 0, sequence = 0, observer, resizeObserver, fills = [];
 const pending = new Map();
-const ctx = { clearRect() { fills = []; }, setTransform() {}, fillRect() { fills.push(this.fillStyle); } };
-const canvas = { getContext: () => ctx };
-hero.querySelector = () => canvas;
+const ctx = { clearRect() { fills = []; }, setTransform() {}, beginPath() {}, roundRect() {}, fill() { fills.push(this.fillStyle); } };
+const canvas = { style: {}, getContext: () => ctx };
+const intro = { getBoundingClientRect: () => ({ bottom: 776 }) };
+hero.querySelector = selector => selector === '.hero__cells' ? canvas : intro;
 hero.getBoundingClientRect = () => ({ width: 1200, height: 900, left: 0, top: 76 });
 const env = {
   document, matchMedia: () => motion, performance: { now: () => now }, devicePixelRatio: 3,
@@ -24,6 +25,8 @@ const env = {
 const mount = vm.runInNewContext(code + '; mountHeroCells', env);
 const cleanup = mount(hero);
 assert.equal(canvas.width, 2400, 'DPR capped at 2');
+assert.equal(canvas.height, 1400, 'cell field ends at intro, before archive navigation');
+assert.equal(canvas.style.height, '700px');
 assert(fills.length > 100, 'static cells drawn without motion');
 const baseline = fills.join('|');
 observer.cb([{ isIntersecting: true }]);
@@ -34,6 +37,8 @@ assert.notEqual(fills.join('|'), baseline, 'pointer illuminates cells');
 advance(1300);
 assert.equal(pending.size, 0, 'trail stops scheduling after it fades');
 assert.equal(fills.join('|'), baseline, 'cells return to baseline');
+hero.listeners.pointermove({ clientX: 170, clientY: 800, pointerType: 'mouse' });
+assert.equal(pending.size, 0, 'pointer below intro cannot activate cells');
 move(); observer.cb([{ isIntersecting: false }]);
 assert.equal(pending.size, 0, 'offscreen cancels work');
 observer.cb([{ isIntersecting: true }]);
